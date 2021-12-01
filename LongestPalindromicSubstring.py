@@ -41,3 +41,21 @@ class Solution(object):
         for idx in range(len(s) - 1):
             longest = max(longest, max(palindrome(idx, idx), palindrome(idx, idx + 1), key=lambda x:x[1] - x[0]), key=lambda x:x[1] - x[0])
         return s[longest[0]:longest[1] + 1]
+
+ 
+ # fastest solution
+ class Solution:
+    def longestPalindrome(self, s):
+        start = max_len = i = 0
+        while i < len(s):
+            left = right = i
+            while right < len(s) - 1 and s[right] == s[right + 1]:
+                right += 1
+            i = right + 1
+            while left > 0 and right < len(s) - 1 and s[left - 1] == s[right + 1]:
+                left -= 1
+                right += 1
+            if max_len < right - left + 1:
+                start = left
+                max_len = right - left + 1
+        return s[start:start + max_len]
