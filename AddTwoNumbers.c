@@ -10,10 +10,12 @@ Explanation: 342 + 465 = 807.
 https://leetcode.com/problems/add-two-numbers/
  */
 
+#include <stdio.h>
+
  struct ListNode {
      int val;
      struct ListNode *next;
- }
+ };
 
 struct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2){
     struct ListNode * head = NULL;
