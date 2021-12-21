@@ -356,3 +356,155 @@ GROUP BY manufacturers
 HAVING SUM( price * units_sold) > 2000000;
 
 #####################################################################################################################################################
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR,
+  last_name VARCHAR
+);
+
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR,
+  department VARCHAR,
+  price INTEGER,
+  weight INTEGER
+);
+
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  product_id INTEGER REFERENCES products(id),
+  paid BOOLEAN
+);
+
+SORTING
+
+Work for both INTEGERS & VARCHAR and Default order is ASC.
+
+SELECT * FROM products ORDER BY price;
+
+SELECT * FROM products ORDER BY price ASC;
+
+SELECT * FROM products ORDER BY price DESC;
+
+Multilevel sorting, sort by 1st column and for same values in the first column 2nd sort is applied.
+
+SELECT * FROM products ORDER BY price, weight;
+
+SELECT * FROM products ORDER BY price ASC, weight DESC;
+
+#####################################################################################################################################################
+
+OFFSET and LIMIT:
+
+OFFSET ==> skip the number of rows mentioned.
+
+LIMIT ==> select only the number of rows mentioned.
+
+SELECT * FROM users;
+
+SELECT * FROM users OFFSET 5; ==> skip the first 5 and send others
+
+SELECT * FROM users LIMIT 5; ==> send only the first 5
+
+SELECT * FROM products ORDER BY price LIMIT 5;
+
+To send the datas page by page:
+
+SELECT * FROM products LIMIT 20 OFFSET 0;
+SELECT * FROM products LIMIT 20 OFFSET 20;
+SELECT * FROM products LIMIT 20 OFFSET 40;
+
+#####################################################################################################################################################
+
+Sub Query
+
+SELECT name, price
+FROM products
+WHERE price > (
+    SELECT MAX(price) FROM products WHERE department = 'Toys'
+);
+
+SELECT p1.name, (SELECT COUNT(name) FROM products)
+FROM (SELECT * FROM products) AS p1
+JOIN (SELECT * FROM products) AS p2 ON p1.id = p2.id
+WHERE p1.id in (SELECT id FROM products);
+
+Subqueries can be used as
+- A source of value
+- A source of rows
+- source of column
+
+SELECT * FROM orders; ==> Many rows & Many columns
+
+SELECT id FROM orders; ==> Many rows & 1 column
+
+SELECT COUNT(*) FROM orders; ==> 1 row & 1 column (single value) ==> scalar Query
+
+SELECT name, price
+FROM products
+WHERE price > (SELECT price FROM products WHERE name = 'some name');
+
+SELECT * FROM
+    (SELECT MAX(price) FROM products) AS max_price,
+    (SELECT MIN(price) FROM products) AS min_price,
+    (SELECT SUM(price) FROM products) AS total_price;
+
+#####################################################################################################################################################
+
+EXISTS
+
+If a subquery returns any rows at all, EXISTS subquery is TRUE, and NOT EXISTS subquery is FALSE.
+
+SELECT column1 FROM t1 WHERE EXISTS (SELECT * FROM t2);
+
+#####################################################################################################################################################
+
+DISTINCT 
+
+Remove duplicate and return the list of unique values
+
+SELECT DISTINCT department FROM products;
+
+SELECT COUNT(DISTINCT department) FROM products;
+
+SELECT DISTINCT department, name FROM products; ==> Unique comination of department and name.
+
+#####################################################################################################################################################
+
+GREATEST
+
+Find the greatest of the given.
+
+SELECT GREATEST (10, 20);
+
+SELECT name, weight, GREATEST(30, 2 * weight)
+FROM products;
+
+#####################################################################################################################################################
+
+LEAST
+
+Find the greatest of the given.
+
+SELECT LEAST (10, 20);
+
+SELECT name, weight, LEAST(30, 2 * weight)
+FROM products;
+
+#####################################################################################################################################################
+
+CASE
+
+SELECT
+    name,
+    price,
+    CASE
+        WHEN price > 600 THEN 'high'
+        WHEN price > 300 THEN 'medium'
+        ELSE 'cheap'
+    END
+FROM products;
+
+#####################################################################################################################################################
