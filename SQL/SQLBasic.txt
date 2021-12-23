@@ -6,6 +6,8 @@ pg-sql.com
 
 port = 5432
 
+pgAdmin = web based tool to manage postgres, can connect to local and remote DB.
+
 #####################################################################################################################################################
 
 CREATE TABLE cities (
@@ -508,5 +510,119 @@ SELECT
         ELSE 'cheap'
     END
 FROM products;
+
+#####################################################################################################################################################
+
+DATA TYPES
+
+NUMBERS
+
+Without Decimal ==> smallint, integer, bigint
+
+with decimal ==> {decimal, numeric} ==> More accurate
+                 {real, double precision, float} ==> Less accurate
+
+auto increment ==> smallserial, serial, bigserial
+
+SELECT (2);
+
+SELECT (2.0);
+
+SELECT (2.0::SMALLINT);
+
+CHARACTER
+
+CHAR(5) ==> chracter of length 5 add spaces if less than 5 and trim if it is larger.
+
+VARCHAR ==> No limit for length
+
+VARCHAR(10) ==> keep the character if length less than 10 and trim if it is larger.
+
+TEXT ==> No limit for length
+
+
+BOOLEAN
+
+TRUE ==> true, yes, on, 1, t, y
+
+FALSE ==> false, no, off, 0, f, n
+
+NULL ==> null
+
+DATES
+
+TIME ==> TIME WITH TIME ZONE, TIME WITHOUT TIME ZONE
+
+TIMESTAMP WITH/WITHOUT TIME ZONE
+
+INTERVAL ==> + or - 2 INTERVAL or 2 TIME/TIME STAMP/DATES or 1 TIME and 1 INTERVAL
+
+CURRENCY, BINARY, JSON, GEOMETRIC, RANGE, ARRAYS, XML, UUID
+
+#####################################################################################################################################################
+
+DATA BASE VALIDATION
+
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(40) NOT NULL UNIQUE,
+  department VARCHAR(20) NOT NULL,
+  description TEXT DEFAULT 'No description',
+  price INTEGER NOT NULL CHECK (price > 0),
+  weight INTEGER DEFAULT 9999 
+);
+
+ALTER TABLE products
+ALTER COLUMN price
+SET NOT NULL;
+
+ALTER TABLE will fail when already null values are there(already failing validation is there).
+
+UPDATE products
+SET price = 9999
+WHERE price is NULL;
+
+DEFAULT VALUE
+
+ALTER TABLE products
+ALTER COLUMN weight
+SET DEFAULT 9999;
+
+UNIQUE
+
+unique name
+
+ALTER TABLE products
+ADD UNIQUE (name)
+
+ALTER TABLE products
+DROP CONSTRAINT products_name_key
+
+unique name and department combination
+
+ALTER TABLE products
+ADD UNIQUE (name, department)
+
+ALTER TABLE products
+DROP CONSTRAINT products_name_department_key
+
+COMPARISON VALIDATION
+
+check is only for a column, not for the sub query
+
+ALTER TABLE products
+ADD CHECK (price > 0)
+
+
+CREATE TABLE ordersnew (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    est_delivery TIMESTAMP NOT NULL,
+    CHECK (created_at < est_delivery)
+);
+
+Web Server validation is also added for good validation.
+Lot of libraries avilable for validation at web server level.
 
 #####################################################################################################################################################

@@ -1,0 +1,53 @@
+BASIC QUERY 
+
+select the last 3 users
+
+SELECT *
+FROM users
+ORDER BY id DESC
+LIMIT 3;
+
+select the posts and captions of the user 200
+
+SELECT username, caption
+FROM users
+JOIN posts ON users.id = posts.user_id
+WHERE users.id = 200
+
+select users and number of likes they created_at
+
+SELECT username, COUNT(*)
+FROM users
+JOIN likes ON likes.user_id = users.id
+GROUP BY username
+
+#####################################################################################################################################################
+
+PERFORMANCE OF PostgreSQL
+
+SHOW data_directory; ==> location of postgre stores data
+
+oid to data base name relation
+
+SELECT oid, datname
+FROM pg_database;
+
+SELECT * FROM pg_class; 
+
+Heap or Heap File ==> File that contains all the data of our table
+
+Tuple or Item ==> Individual row from the table
+
+Block or Page ==> Heap file is divided in many different blocks or pages,
+                  Each page/block stores some number of rows
+
+Each block is 8KB large regarless of number of elements
+
+
+BLOCK STRUCTURE 
+
+PageHeaderData ==>24 Bytes
+ItemidData ==> each itemid is 4 bytes long to points the start of the start of the data(item)
+FreeSpace
+Items ==> each item will start with item headers of 23bytes after that omly userdata will be there
+SpecialSpace

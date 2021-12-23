@@ -1,0 +1,336 @@
+DATA BASE DESIGN
+
+INSTAGRAM DB
+
+#####################################################################################################################################################
+
+SQL Schema Designer
+
+dbdiagram.io
+drawsql.app
+sqldbm.com
+quickdatabasediagrams.com
+ondras.zarovi.cz/sql/demo
+
+#####################################################################################################################################################
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    bio VARCHAR(400),
+    profile VARCHAR(200),
+    phone_no VARCHAR(20),
+    email_id VARCHAR(240),
+    password VARCHAR(50),
+    status VARCHAR(15)
+);
+
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(200) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    contents VARCHAR(240) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+#####################################################################################################################################################
+
+LIKE SYSTEM
+
+CREATE TABLE likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id) NOT NULL,
+    UNIQUE (user_id, post_id)
+);
+
+# of likes for post with id 3
+
+SELECT COUNT(*)
+FROM likes
+WHERE post_id = 3;
+
+username of ppl who like post with id 3
+
+SELECT
+FROM likes
+JOIN users ON likes.user_id = users.id
+WHERE post_id = 3;
+
+URLs of the posts liked by user 3
+
+SELECT url
+FROM likes
+JOIN posts on likes.post_id = posts.id
+WHERE user_id = 3;
+
+id's of top 5 liked posts
+
+SELECT posts.id
+FROM posts
+JOIN likes ON likes.post_id = posts.id
+GROUP BY posts.id
+ORDER BY COUNT(*) DESC
+LIMIT 5
+
+To have both post and comments like
+
+SOLUTION #1
+
+POLYMORPHIC ASSOCIATION
+
+Associate a single column to multiple tables
+
+liked_type ==> post or comment
+
+Based on liked_type like_id will point to comment or post
+
+CREATE TABLE likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    like_id INTEGER NOT NULL,
+    liked_type VARCHAR(10)
+);
+
+SOLUTION #2
+
+COALESCE
+
+return the first non null value
+
+SELECT COALESCE (10, 5); ==> 10
+
+SELECT COALESCE (null, 5); ==> 5
+
+NULL::BOOLEAN ==> false
+NULL::BOOLEAN::INTEGER ==> null
+
+NOT NULL::BOOLEAN ==> true
+NOT NULL::BOOLEAN::INTEGER ==> 1
+
+CREATE TABLE likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id),
+    comment_id INTEGER REFERENCES comments(id)
+    CHECK ((COALESCE((post_id)::BOOLEAN::INTEGER, 0) + COALESCE((comment_id)::BOOLEAN::INTEGER, 0)) = 1)
+);
+
+this check will make sure alwasy any one of post_id or comment_id is not null.
+
+SOLUTION #3
+
+CREATE TABLE posts_likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id) NOT NULL
+);
+
+CREATE TABLE comments_likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    comment_id INTEGER REFERENCES comments(id) NOT NULL
+);
+
+#####################################################################################################################################################
+
+MENTION SYSTEM
+
+caption and location
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(200) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    caption VARCHAR(240),
+    latitude REAL,
+    longitude REAL
+);
+
+tags in posts
+
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id) NOT NULL,
+    x_coordinate REAL NOT NULL,
+    y_coordinate REAL NOT NULL
+);
+
+ 
+Mentions on the posts caption
+
+solution #1 ==> add new table similar to tags table
+
+CREATE TABLE photo_tags (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    post_id INTEGER REFERENCES posts(id) NOT NULL,
+    x_coordinate REAL NOT NULL,
+    y_coordinate REAL NOT NULL
+);
+
+CREATE TABLE caption_tags (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    posts_id INTEGER REFERENCES posts(id) NOT NULL,
+);
+
+solution #2 ==> add mention details also in the tags table, just making the
+                x and y coordinate as NULL for mentions.
+
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    posts_id INTEGER REFERENCES posts(id) NOT NULL,
+    x_coordinate REAL,
+    y_coordinate REAL
+);
+
+#####################################################################################################################################################
+
+HASTAG SYSTEM
+
+solution #1
+
+CREATE TABLE hashtag (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    title VARCHAR(100),
+    posts_id INTEGER REFERENCES posts(id) NOT NULL
+);
+
+solution #2
+
+Above solution stores the title and created_at duplicate, extra space
+
+CREATE TABLE hashtag (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    title VARCHAR(100),
+);
+
+CREATE TABLE hashtag_posts (
+    id SERIAL PRIMARY KEY,
+    hastag_id INTEGER REFERENCES hashtag(id) NOT NULL,
+    posts_id INTEGER REFERENCES posts(id) NOT NULL
+);
+
+CREATE TABLE followers (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL
+);
+
+#####################################################################################################################################################
+
+INSTAGRAM DB DESIGN
+
+CREATE TABLE users (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	username VARCHAR(30) NOT NULL,
+	bio VARCHAR(400),
+	avatar VARCHAR(200),
+	phone VARCHAR(25),
+	email VARCHAR(40),
+	password VARCHAR(50),
+	status VARCHAR(15),
+	CHECK(COALESCE(phone, email) IS NOT NULL)
+);
+
+CREATE TABLE posts (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	url VARCHAR(200) NOT NULL,
+	caption VARCHAR(240),
+	lat REAL CHECK(lat IS NULL OR (lat >= -90 AND lat <= 90)), 
+	lng REAL CHECK(lng IS NULL OR (lng >= -180 AND lng <= 180)),
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE comments (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	contents VARCHAR(240) NOT NULL,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE likes (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+	comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+	CHECK(
+		COALESCE((post_id)::BOOLEAN::INTEGER, 0)
+		+
+		COALESCE((comment_id)::BOOLEAN::INTEGER, 0)
+		= 1
+	),
+	UNIQUE(user_id, post_id, comment_id)
+);
+
+CREATE TABLE photo_tags (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+	x INTEGER NOT NULL,
+	y INTEGER NOT NULL,
+	UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE caption_tags (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+	UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE hashtags (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	title VARCHAR(20) NOT NULL UNIQUE
+);
+
+CREATE TABLE hashtags_posts (
+	id SERIAL PRIMARY KEY,
+	hashtag_id INTEGER NOT NULL REFERENCES hashtags(id) ON DELETE CASCADE,
+	post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+	UNIQUE(hashtag_id, post_id)
+);
+
+CREATE TABLE followers (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	leader_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	UNIQUE(leader_id, follower_id)
+);
+
+#####################################################################################################################################################
