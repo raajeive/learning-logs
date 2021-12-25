@@ -51,3 +51,366 @@ ItemidData ==> each itemid is 4 bytes long to points the start of the start of t
 FreeSpace
 Items ==> each item will start with item headers of 23bytes after that omly userdata will be there
 SpecialSpace
+
+Heap File:
+Block0 ==> user1, user2
+Block1 ==> user3, user4
+
+SELECT *
+FROM users
+WHERE users.username = 'user1';
+
+1. Heap file is loaded into the RAM 
+2. Search for the username one by one
+3 return the value
+
+Full table is loaded on the RAM. ==> Full Table Scan
+
+Index
+
+DS that efficiently tell us which block/index a record is stored,
+so you dont need to do full table scan.
+
+1. Extract the oly property we want to do fast lookups by and the block.index for each.
+
+2. Sort them in some order.
+
+3. Store them in Tree DS.
+
+4. Predefined Binary search with help string.
+   (From root we can find do we need to check the child nodes or not)
+
+
+CREATE INDEX ON users (username);
+
+CREATE INDEX users_custom_name ON users (username);
+
+DROP INDEX users_username_idx;
+
+DROP INDEX users_custom_name;
+
+EXPLAIN ANALYZE SELECT *
+FROM users
+WHERE users.username = 'user1';
+
+Check the execution time for query with and without index.
+
+SELECT pg_size_pretty(pg_relation_size('users')):
+
+SELECT pg_size_pretty(pg_relation_size('users_username_idx')):
+
+- index takes aditional storeage
+- insert/update/delete rows ==> causes additional time to update the same in index as well
+- postgres not gurantee that will use index for the query
+
+Types of index:
+
+B-Tree
+Hash
+GiST
+SP-GiST
+GIN
+BRIN
+
+Auto Generated Index:
+
+For primary key and the column with UNIQUE constraint,
+postgres will create index automatically.
+
+SELECT relname, relkind
+FROM pg_class
+WHERE relkind = 'i';
+
+Index store on Disk
+
+Index Page ==> with name of the index
+
+There are differnt 8KB large blocks are stored inside the index page.
+
+- Meta Page
+- Root Block/Page
+- Parent Block/Page
+- Leaf Block/Page
+
+CREATE EXTENSION pageinspect;
+
+SELECT *
+FROM bt_metap('users_username_idx');
+
+SELECT *
+FROM bt_page_item('users_username_idx', 3);
+
+where 3 is the index of the root page.
+
+ctid ==> page, index
+
+SELECT ctid, * FROM users WHERE username = 'user1';
+
+SELECT oid, datname FROM pg_database;
+
+SHOW data_directory;
+
+SELECT *
+FROM pg_class
+WHERE relkind = 'i';
+
+#####################################################################################################################################################
+
+Query Processing
+
+SELECT *
+FROM users
+WHERE username = 'user1';
+
+1. Parser ==> Creates the query tree bu parsing the query
+
+2. Rewrite ==> Rewrites the query to make it efficient if possible
+
+3. Planner ==> Plans how to execute query efficiently, (using index or Full table scan is decieded)
+
+4. Execute ==> Executes the query and return the o/p
+
+EXPLAIN ==> Tells postgres plan dto execute
+
+EXPLAIN ANALYZE ==> Tells how it plans and Executes
+
+EXPLANIN ANALYZE SELECT username, contents
+FROM users
+JOIN comments ON comments.user_id = users.id
+WHERE users.id = 'user1';
+
+Look at index file:
+
+- Load the index file, find the column we need and its comment_id
+- Load the DB file, go to correct block and index of data
+
+Full table loading
+
+- Load the full table
+- go through each block and check for the query
+- return the o/p
+
+EXPLAIN SELECT *
+FROM likes
+WHERE created_at < '2021-01-01';
+
+CREATE INDEX likes_created_at_idx ON likes (created_at);
+
+#####################################################################################################################################################
+
+
+SELECT username, tags.created_at
+FROM users
+JOIN (
+    SELECT user_id, created_at FROM caption_tags
+    UNION ALL
+    SELECT user_id, created_at FROM posts_tags
+) AS tags ON tags.user_id = users.id
+WHERE tags.created_at > '2020-01-07';
+
+
+COMMON TABLE EXPRESSION
+
+WITH tags AS (
+    SELECT user_id, created_at FROM caption_tags
+    UNION ALL
+    SELECT user_id, created_at FROM posts_tags
+)
+
+SELECT username, tags.created_at
+FROM users
+JOIN tags AS tags ON tags.user_id = users.id
+WHERE tags.created_at > '2020-01-07';
+
+RECURSIVE CTE
+
+- used for when we use tree or graph DS
+
+WITH RECURSIVE countdown (val) AS (
+    SELECT 3 AS val (-- Initial, Non Recursive)
+    UNION
+    SELECT val - 1 FROM countdown WHERE val > 1 (-- Recursive)
+)
+SELECT *
+FROM countdown;
+
+1. Define the Results and working table
+2. Execute the non recursive and initial and store it in the both resukts and working table
+3. Run the recursive statement replacing the recurive (countdown) with reference to working table and
+   replace the contents with new data on working table
+4. if recursive statement return anything append with the results table and run recursion again 
+5. if recursive statement return nothing then stop the recursion.
+
+Finaly resturn the working table and rename it as the recursive function (countdown).
+
+Result table            Working table
+3                         3
+
+3
+2                         2
+
+3
+2
+1                         1
+
+countdown ==> result table
+
+3
+2
+1
+
+
+FOLLOWING SUGGESTION INSTAGRAM
+
+if user A (id = 1000) follows B and C, suggest who B and C follows and so on.
+
+WITH RECURSIVE suggestion(leader_id, follower_id, depth) AS (
+        SELECT leader_id, follower_id, 1 AS depth
+        FROM followers
+        WHERE follower_id = 1000
+    UNION
+        SELECT followers.leader_id, followers.follower_id, depth + 1
+        FROM followers
+        JOIN suggestion ON suggestion.leader_id = followers.follower_id
+        WHERE depth < 3
+)
+
+SELECT DISTINCT users.id, users.username
+FROM suggestions
+JOIN users ON users.id = suggestion.leader_id
+WHERE depth > 1
+LIMIT 30;
+
+#####################################################################################################################################################
+
+VIEWS
+
+Most popular user ==> most tagged user on posts and caption.
+
+SELECT
+FROM users
+JOIN (
+    SELECT user_id FROM posts_tags
+    UNION ALL
+    SELECT user_id FROm caption_tags
+) AS tags ON tags.user_id = users.id
+GROUP BY username
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
+posts_tags and caption_tags are union for this query everytime.
+
+better to have 1 table, its a desing mistake.
+
+solution #1
+- create new tag table
+- copy the posts and caption tags table
+
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    posts_id INTEGER REFERENCES posts(id) NOT NULL,
+    x_coordinate REAL,
+    y_coordinate REAL
+);
+
+INSERT INTO tags (created_at, updated_at, user_id, post_id, x_coordinate, y_coordinate)
+SELECT created_at, updated_at, user_id, post_id, x_coordinate, y_coordinate
+FROM posts_tags;
+
+INSERT INTO tags (created_at, updated_at, user_id, post_id)
+SELECT created_at, updated_at, user_id, post_id
+FROM caption_tags;
+
+we cant have the unique id for both while copying the id, changing the id might break the app somewhere.
+And posts and caption tags queries will fail.
+
+solution #2
+
+VIEWS
+
+CREATE VIEW tags AS (
+    SELECT id, created_at, user_id, posts_id, 'posts_tags' AS type FROM posts_tags
+    UNION ALL
+    SELECT id, created_at, user_id, posts_id, 'caption_tags' AS type FROM caption_tags
+)
+
+SELECT * FROM tags;
+
+SELECT
+FROM users
+JOIN tags ON tags.user_id = users.id
+GROUP BY username
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
+
+most recent posts (latest 10):
+
+CREATE VIEW recent_posts AS (
+    SELECT *
+    FROM posts
+    ORDER BY created_at DESC
+    LIMIT 10
+);
+
+SELECT * FROM recent_posts;
+
+SELECT *
+FROM recent_posts
+JOIN users ON users.id = recent_posts.user_id;
+
+change or alter the existing VIEW
+
+CREATE OR REPLACE VIEW recent_posts AS (
+    SELECT *
+    FROM posts
+    ORDER BY created_at DESC
+    LIMIT 15
+);
+
+delete a VIEW
+
+DROP VIEW recent_posts;
+
+#####################################################################################################################################################
+
+TRANSACTIONS
+
+CREATE TABLE accounts (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(20) NOT NULL,
+    balance INTEGER NOT NULL CHECK balance >= 0
+);
+
+user1 send money to user 2
+
+withdraw 50 from user 1
+
+UPDATE accounts
+SET balance = balance - 50
+WHERE username = 'user1'
+
+CRASH happened
+
+add 50 to user2
+
+UPDATE accounts
+SET balance = balance + 50
+WHERE username = 'user2'
+
+TRANSACTIONS
+- it will allow the connection# to create a sparate work space other than main database
+- any change on that wont affect the main database until we commit the change from work DB
+
+BEGIN ==> will start the TRANSACTIONS
+
+COMMIT ==> will commit the work db to main db
+
+ROLLBACK ==> will drop the workdb and the connection will start point to main db. (includes Error and crash case)
+
+Error in transaction ==> move the transaction to aborted state, should to ROLLBACK.
+
+#####################################################################################################################################################
