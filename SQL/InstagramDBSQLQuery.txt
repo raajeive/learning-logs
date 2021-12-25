@@ -43,7 +43,6 @@ Block or Page ==> Heap file is divided in many different blocks or pages,
 
 Each block is 8KB large regarless of number of elements
 
-
 BLOCK STRUCTURE 
 
 PageHeaderData ==>24 Bytes
@@ -79,7 +78,6 @@ so you dont need to do full table scan.
 
 4. Predefined Binary search with help string.
    (From root we can find do we need to check the child nodes or not)
-
 
 CREATE INDEX ON users (username);
 
@@ -257,7 +255,6 @@ countdown ==> result table
 3
 2
 1
-
 
 FOLLOWING SUGGESTION INSTAGRAM
 
