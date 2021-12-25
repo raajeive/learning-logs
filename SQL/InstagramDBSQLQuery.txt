@@ -198,7 +198,6 @@ CREATE INDEX likes_created_at_idx ON likes (created_at);
 
 #####################################################################################################################################################
 
-
 SELECT username, tags.created_at
 FROM users
 JOIN (
@@ -345,7 +344,6 @@ JOIN tags ON tags.user_id = users.id
 GROUP BY username
 ORDER BY COUNT(*) DESC
 LIMIT 1;
-
 
 most recent posts (latest 10):
 
