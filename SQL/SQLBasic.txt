@@ -632,3 +632,88 @@ Lot of libraries avilable for validation at web server level.
 
 #####################################################################################################################################################
 
+UNION
+
+The UNION operator could be used to find the result-set or combination of two or more tables.
+
+Each table used within UNION must have the same number of columns.
+
+The columns must have same data types.
+
+The columns in each table must be in the same order.
+
+SELECT columnnames FROM table1
+UNION
+SELECT columnnames FROM table2;
+
+SELECT columnnames FROM table1
+UNION ALL
+SELECT columnnames FROM table2;
+
+UNION ==> Unique values 
+
+UNION ALL ==> Duplicate values
+
+#####################################################################################################################################################
+
+INTERSECT
+
+INTERSECT statement will return only those rows which will be common to both of the SELECT statements.
+
+The number and type of fields present in the two data-sets must be same and similar
+
+SELECT column1 , column2 ....
+FROM table_names
+WHERE condition
+
+INTERSECT
+
+SELECT column1 , column2 ....
+FROM table_names
+WHERE condition
+
+#####################################################################################################################################################
+
+EXCEPT
+
+This operation includes the tuples which are present one relation but should not be present in other relation.
+
+For example : To find the customers who have an account but no loan at the bank:
+
+SELECT CustomerName FROM Depositor
+
+EXCEPT
+
+SELECT CustomerName FROM Borrower ;
+
+INTERSECT ALL and EXCEPT ALL ==> will include duplicates.
+
+#####################################################################################################################################################
+
+ENUM
+
+An ENUM is a string object whose value is decided from a set of permitted literals(Values)
+that are explicitly defined at the time of column creation.
+
+Succinct data storage required to store data in limited size columns.
+
+The strings that you pass to the enum data types implicitly get the numerical numbering.
+
+CREATE TABLE Student_grade(
+id INT PRIMARY KEY AUTO_INCREMENT,
+Grade VARCHAR(250) NOT NULL,
+priority ENUM('Low', 'Medium', 'High') NOT NULL
+);
+
+The prioritized column will accept only three values.
+
+SELECT * FROM Student_grade
+WHERE priority = 'High';
+
+Here, the order of numbering Low->1, Medium->2, High->3.
+
+SELECT * FROM Student_grade
+WHERE priority = 2;
+
+#####################################################################################################################################################
+
