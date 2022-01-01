@@ -1,0 +1,178 @@
+SCHEMEA MIGRATION
+
+Rename the contents to body
+
+ALTER TABLE comments
+RENAME COLUMN contents TO body;
+
+- change the API requests
+- change the query
+
+Migration File:
+
+UP ==> Apply Migration file
+DOWN ==> Revert the Migration file
+
+#1 empty table to comments table
+
+migration file
+
+UP
+
+CREATE TABLE comments (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	contents VARCHAR(240) NOT NULL,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE
+);
+
+DOWN
+
+DROP TABLE comments;
+
+#2 rename contents to body
+
+UP
+
+ALTER TABLE comments
+RENAME COLUMN contents TO body;
+
+DOWN
+
+ALTER TABLE comments
+RENAME COLUMN body TO contents;
+
+JS ==> node-pg-migrate
+Python ==> yoyo-migration
+
+migration libraries will create the table in DB to keep track of the migrations,
+when we do migration with several commits, thwy all will be handled based on this DB table.
+
+#####################################################################################################################################################
+
+DATA MIGRATION
+
+In posts table will decide to change latitude and longitude to one column as location using the point data type.
+
+CREATE TABLE posts (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	url VARCHAR(200) NOT NULL,
+	caption VARCHAR(240),
+	lat REAL CHECK(lat IS NULL OR (lat >= -90 AND lat <= 90)), 
+	lng REAL CHECK(lng IS NULL OR (lng >= -180 AND lng <= 180)),
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE posts (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+	url VARCHAR(200) NOT NULL,
+	caption VARCHAR(240),
+	location POINT,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+solution #1
+
+- create location column (Schema migration)
+- move all latitude and longitude data to location column (data migration)
+- delete the latitude and longitude (Schema migration)
+
+copy operation takes more time ==> if we do it with transaction, we may have newly
+added datas wont be migrated since they added to DB after we start the transaction.
+They all added while transaction was running.
+
+solution #2
+
+- Add column location.
+- Deploy new version of API that will write values in both latitude/longitude and location.
+- Do copy operation.
+- Updated the API to write only on location.
+- Drop the latitude and longitude
+
+option #1
+
+JS Script,
+
+- query all the items ==> do in batch(LIMIT OFFSET) to avoid loading ton of data
+- run the copy logic
+- update to DB
+
+SQL with Transaction
+
+UPDATE posts
+SET location = POINT(latitude, longitude)
+WHERE location is NULL;
+
+#####################################################################################################################################################
+
+TRANSACTIONS LOCKS
+
+When we do large transaction take more time, when transaction modifies the value in the column. that column is termed as locked.
+So no other transaction or query can update the value in the column.
+Once the transaction is commited or rolled back, then only the column will be unlocked for other updates.
+
+#####################################################################################################################################################
+
+API INTERACTION
+
+accessing the postgresql from node npi
+
+#####################################################################################################################################################
+
+SECURITY SQL
+
+SQL Inject Exploit
+
+users input should not be concatenated directly with query.
+
+"SELECT * FROM users WHERE id = ${id};"
+"SELECT * FROM users WHERE id =" +  id + ";"
+
+id = 1; DROP TABLE USERS;
+
+==> SELECT * FROM users WHERE id =1; DROP TABLE users;
+
+solution #1:
+
+send the query and the options separately by relying on postgres.
+
+statement = SELECT * FROM users WHERE id = $1;
+
+options = ["1"]
+
+PG ==>
+
+- Create prepared statement
+
+PREPARE randomfunname(VARCHAR) AS
+	SELECT *
+	FROM users
+	WHERE id = $1;
+
+- Execute the prepared statement
+
+EXECUTE randomfunname("1")
+
+Even if the querry is send in user data, that will be replaced in WHERE.
+
+Downsight:
+
+- Cannot use prepare and execute for the indentifier like column name and table name on the fly.
+
+
+solution #2
+
+user defined prevention from sql injection
+
+parse the user data before query.
+
+parametrized query.
+
+#####################################################################################################################################################
+
