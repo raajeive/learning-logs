@@ -124,6 +124,11 @@ VALUES
     ('Hari'),
     ('karthick');
 
+Will return the user after insert
+
+INSERT INTO users (username)
+VALUES ('Raajeive')
+RETURNING *;
 
 CREATE TABLE photos (
     id SERIAL PRIMARY KEY,
