@@ -43,8 +43,8 @@ class Solution(object):
         return s[longest[0]:longest[1] + 1]
 
  
- # fastest solution
- class Solution:
+# fastest solution
+class Solution:
     def longestPalindrome(self, s):
         start = max_len = i = 0
         while i < len(s):
