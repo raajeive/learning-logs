@@ -31,5 +31,3 @@ class Solution:
         new_str_list.reverse()
         new_str = "".join(new_str_list) + "".join(str_list)
         return new_str
-
-
