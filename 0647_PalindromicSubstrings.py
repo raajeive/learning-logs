@@ -31,6 +31,7 @@ class Solution:
                 total += subpalindromes(s[left:right + 1])
         return total
 
+
 # fastest solution
 class Solution:
     def countSubstrings(self, s: str) -> str:
