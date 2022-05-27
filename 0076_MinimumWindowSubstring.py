@@ -4,6 +4,7 @@ class Solution:
     def minWindow(self, source, target):
         if not source or not target or len(target) > len(source):
             return ""
+
         targetDict = {}
         for char in target:
             if char in targetDict:
@@ -18,6 +19,7 @@ class Solution:
         last = sys.maxsize
 
         while end < len(source):
+
             if source[end] not in targetDict:
                 targetDict[source[end]] = 0
             targetDict[source[end]] -= 1
@@ -33,7 +35,6 @@ class Solution:
                 if targetDict[source[start]] > 0:
                     targetLength += 1
                 start += 1
-            end += 1
             
             while True:
                 if start < end and targetDict[source[start]] < 0:
@@ -41,5 +42,7 @@ class Solution:
                     start += 1
                 else:
                     break
+            
+            end += 1
             
         return source[first:last + 1] if (last - first) != sys.maxsize else ""
