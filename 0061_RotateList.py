@@ -10,26 +10,19 @@ class Solution:
             return head
 
         current = head
-        count = 0
-        while current:
+        count = 1
+        while current.next:
             count += 1
             current = current.next
+        current.next = head
 
         k = k % count
         current = head
-        for _ in range(k):
+        for _ in range(count - k - 1):
             current = current.next
-            if not current:
-                current = head
-        
-        temp = head
-        while current.next:
-            temp = temp.next
-            current = current.next
-        
-        current.next = head
-        head = temp.next
-        temp.next = None
+
+        head = current.next
+        current.next = None
         
         return head
 
