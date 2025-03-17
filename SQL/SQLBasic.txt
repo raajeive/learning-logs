@@ -1,0 +1,719 @@
+SQL - Structured Querry Language
+
+Eg - MySQL, PostgreSQL, Oracle, MS SQL Server.
+
+pg-sql.com
+
+port = 5432
+
+pgAdmin = web based tool to manage postgres, can connect to local and remote DB.
+
+#####################################################################################################################################################
+
+CREATE TABLE cities (
+    name VARCHAR(50),
+    country VARCHAR(50),
+    population INTEGER,
+    area INTEGER
+);
+
+VARCHAR - Text
+INTEGER - -2B to 2B (no Decimal)
+
+#####################################################################################################################################################
+
+INSERT INTO cities (name, country, population, area)
+VALUES ('Tokoyo', 'Japan', 30000000, 8000);
+
+INSERT INTO cities (name, country, population, area)
+VALUES
+    ('Delhi', 'India', 30000000, 8000),
+    ('Shanghai', 'China', 30000000, 8000),
+    ('China', 'India', 30000000, 8000);
+
+#####################################################################################################################################################
+
+SELECT * FROM cities;
+
+SELECT name, country FROM cities;
+
+SELECT name, country, name, name FROM cities;
+
+SELECT name, country, population/area FROM cities;
+
+#####################################################################################################################################################
+
+Math Operations:
+
++, - , * , /, ^ (Exponent), |/ (Square root), @ (absolute), % (Remainder)
+
+SELECT name, country , population / area AS population_density FROM cities;
+
+#####################################################################################################################################################
+
+String Operators:
+
+|| and CONCAT() = Join 2 strings
+
+LOWER(), UPPER(), LENGETH()
+
+SELECT name || country FROM cities
+
+SELECT name || ', ' || country AS location FROM cities
+
+SELECT CONCAT(name, ', ',  country) AS location FROM cities
+
+SELECT CONCAT(LOWER(name), ', ',  UPPER(country)) AS location FROM cities
+
+SELECT UPPER(CONCAT(name, ', ',  country)) AS location FROM cities
+
+#####################################################################################################################################################
+
+SELECT name, area FROM cities WHERE area > 4000;
+
+Comparison Operator:
+
+=, <, >, <=, >=, != and <> (Not Equal), BETWEEN, IN, NOT IN 
+
+SELECT name, area FROM cities WHERE area BETWEEN 4000 AND 8000;
+
+SELECT name, area FROM  cities WHERE name IN ('Delhi', 'Shanghai');
+
+SELECT name, area FROM  cities WHERE area NOT IN (1000, 2000);
+
+SELECT name, area FROM  cities WHERE area NOT IN (1000, 2000) AND name IN ('Delhi', 'Shanghai');
+
+#####################################################################################################################################################
+
+Compound Operators:
+
+OR, AND
+
+SELECT name, country , population / area AS population_density FROM cities WHERE population / area > 3000;
+
+#####################################################################################################################################################
+
+UPDATE cities SET population = 39000000 WHERE name = 'Tokyo';
+
+UPDATE cities SET population = 39000000 WHERE name = 'Tokyo' AND country = 'Japan';
+
+#####################################################################################################################################################
+
+DELETE FROM cities WHERE name = 'Tokyo';
+
+#####################################################################################################################################################
+
+DROP TABLE cities;
+
+#####################################################################################################################################################
+
+Primary Key = Unique value for each row in a table. (id or UUID)
+
+Foreign Key = Identifies a record (usually in another table) that this row is associated with
+
+#####################################################################################################################################################
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50)
+);
+
+INSERT INTO users (username)
+VALUES
+    ('Raajeive'),
+    ('Hari'),
+    ('karthick');
+
+Will return the user after insert
+
+INSERT INTO users (username)
+VALUES ('Raajeive')
+RETURNING *;
+
+CREATE TABLE photos (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(200)
+    user_id INTEGER REFERENCES users(id)
+);
+
+INSERT INTO photos (url, user_id)
+VALUES
+    ('http://1.jpg', 3),
+    ('http://2.jpg', 2),
+    ('http://3.jpg', 2),
+    ('http://4.jpg', 1);
+
+
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    contents VARCHAR(240),
+    user_id INTEGER REFERENCES users(id),
+    photo_id INTEGER REFRENCES photos(id)
+);
+
+INSERT INTO comments (contents, user_id, photo_id)
+VALUES
+    ('Good', 3, 1),
+    ('Good2', 2, 1),
+    ('Good3', 2, 3),
+    ('Good4', 1, 2);
+
+#####################################################################################################################################################
+
+Attaching the user_id not exists = Error "Violates Foreign key Constraints"
+
+Attaching the photos without user ==> user_id = NULL
+
+Delete a user, which is associated with photos
+
+on delete constraints
+
+ON DELETE RESTRICT (DEFAULT) = Error
+
+ON DELETE NO ACTION = Error
+
+ON DELETE CASCADE = Delete user and associated photo as well
+
+ON DELETE SET NULL = Delate the user and set user_id to NULL
+
+ON DELETE SET DEFAULT = Delate the user and set user_id to Default
+
+CREATE TABLE photos (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(200)
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+);
+
+#####################################################################################################################################################
+
+JOINS & AGGREGATIONS
+
+JOIN = Produces values by merging rows from different tables
+
+AGGREGATION = Produce a single value by looking at different rows and tables
+
+#####################################################################################################################################################
+
+JOIN
+
+Select * FROM photos JOIN users ON user_id = photos.user_id;
+
+Select url, username FROM photos JOIN users ON user_id = photos.user_id;
+
+SELECT contents, username FROM comments JOIN users ON users.id = comments.user_id;
+
+SELECT contents, url FROM comments JOIN photos ON photos.id = comments.photo_id;
+
+SELECT comments.id AS comment_id, photos.id AS photo_id 
+FROM comments
+JOIN photos ON photos.id = comments.photo_id;
+
+SELECT C.id AS comment_id, photos.id AS photo_id 
+FROM comments AS C
+JOIN photos ON photos.id = C.photo_id;
+
+in the JOIN result, there is no match for the source table value, the entire row is dropped.
+Eg. making user_id of the photos table to NULL, will drop that photo in the result since there is no match in the users table
+
+#####################################################################################################################################################
+
+Types of JOINS
+
+INNER JOIN (Default) = LEFT and RIGHT
+
+drops the row if the entry in the source table (LEFT) has not match
+
+SELECT C.id AS comment_id, photos.id AS photo_id 
+FROM comments AS C
+JOIN photos ON photos.id = C.photo_id;
+
+
+LEFT JOIN = LEFT + (LEFT and RIGHT)
+
+Add NULL in the result row for the RIGHT table values if the source LEFT table has no match.
+
+SELECT C.id AS comment_id, photos.id AS photo_id 
+FROM comments AS C
+LEFT JOIN photos ON photos.id = C.photo_id;
+
+
+RIGHT JOIN = RIGHT + (LEFT and RIGHT)
+
+Drops the LEFT table from the result if don't have any matches,
+but includes the remaining RIGHT table entries in the result with LEFT table values as NULL in the result.
+
+SELECT C.id AS comment_id, photos.id AS photo_id 
+FROM comments AS C
+RIGHT JOIN photos ON photos.id = C.photo_id;
+
+
+FULL JOIN = RIGHT + LEFT + (LEFT and RIGHT)
+
+Add both LEFT and RIGHT if anything doesn't match add NULL and also add the remaining values from the destination (RIGHT)
+and make LEFT table values for that row as NULL in results. 
+
+SELECT C.id AS comment_id, photos.id AS photo_id 
+FROM comments AS C
+FULL JOIN photos ON photos.id = C.photo_id;
+
+
+* In JOIN, if the source table has multiple matches, all the matches will be included as a new row in the results.
+
+
+Find the url and contents where the users who posted the photo has commented on the photo.
+
+SELECT url, contents
+FROM comments
+JOIN photos ON comments.photo_id = photos.id
+WHERE comments.user_id = photos.user_id;
+
+Add username also in the results
+
+SELECT url, contents, username
+FROM comments
+JOIN photos ON comments.photo_id = photos.id
+JOIN users ON users.id = comments.user_id AND users.id = photos.user_id
+
+
+#####################################################################################################################################################
+
+GROUP BY
+
+SELECT user_id FROM comments GROUP BY user_id;
+
+we can select only the grouped column, can select any other column.
+we can select other columns using aggregate functions.
+
+#####################################################################################################################################################
+
+AGGREGATION
+
+Aggregate Functions:
+
+COUNT(), SUM(), AVG(), MIN(), MAX()
+
+SELECT MAX(id) FROM comments;
+
+#####################################################################################################################################################
+
+COMBINING GROUP BY AND AGGREGATION
+
+SELECT user_id, COUNT(id) AS num_comments_created_by_user FROM comments GROUP BY user_id;
+
+SELECT COUNT(user_id) FROM photos; ==> only the rows with value for user_id is counted (null rows are not counted)
+
+SELECT COUNT(*) FROM photos; ==> Count the number of rows including the null
+
+SELECT user_id, COUNT(*) FROM comments GROUP BY user_id;
+
+Find the number of comments in each photo
+
+SELECT photo_id, COUNT(*)
+FROM comments
+GROUP BY photo_id;
+
+Find the number of photos shared by each user
+
+SELECT user_id, COUNT(*)
+FROM photos
+GROUP BY user_id;
+
+Find the number of photos shared by each user with a username
+
+SELECT username, COUNT(*)
+FROM photos
+JOIN users ON users.id = photos.user_id
+GROUP BY users.username;
+
+#####################################################################################################################################################
+
+HAVING
+
+Filter the results on GROUP BY, similar to WHERE
+
+Find the no. of comments for each photo where photo_id is less than 3
+and photo has more than 2 comments
+
+SELECT photo_id, COUNT(*)
+FROM comments
+WHERE photo_id < 3
+GROUP BY photo_id
+HAVING count(*) > 2;
+
+
+Find the users where the users have commented on the first 2 photos
+and the users added more than 2 comments on that photo
+
+SELECT user_id
+FROM comments
+WHERE photo_id < 3
+GROUP BY user_id
+HAVING COUNT(*) > 2;
+
+Find the manufacturers with total revenue for all phones greater than 200000
+
+CREATE TABLE phones (
+    name VARCHAR(50),
+    manufacturer VARCHAR(50),
+    price INTEGER,
+    units_sold INTEGER
+);
+
+SELECT manufacturers, SUM(price * units_sold)
+FROM phones
+GROUP BY manufacturers
+HAVING SUM( price * units_sold) > 2000000;
+
+#####################################################################################################################################################
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  first_name VARCHAR,
+  last_name VARCHAR
+);
+
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR,
+  department VARCHAR,
+  price INTEGER,
+  weight INTEGER
+);
+
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  product_id INTEGER REFERENCES products(id),
+  paid BOOLEAN
+);
+
+SORTING
+
+Work for both INTEGERS & VARCHAR and Default order is ASC.
+
+SELECT * FROM products ORDER BY price;
+
+SELECT * FROM products ORDER BY price ASC;
+
+SELECT * FROM products ORDER BY price DESC;
+
+Multilevel sorting, sort by 1st column and for same values in the first column 2nd sort is applied.
+
+SELECT * FROM products ORDER BY price, weight;
+
+SELECT * FROM products ORDER BY price ASC, weight DESC;
+
+#####################################################################################################################################################
+
+OFFSET and LIMIT:
+
+OFFSET ==> skip the number of rows mentioned.
+
+LIMIT ==> select only the number of rows mentioned.
+
+SELECT * FROM users;
+
+SELECT * FROM users OFFSET 5; ==> skip the first 5 and send others
+
+SELECT * FROM users LIMIT 5; ==> send only the first 5
+
+SELECT * FROM products ORDER BY price LIMIT 5;
+
+To send the datas page by page:
+
+SELECT * FROM products LIMIT 20 OFFSET 0;
+SELECT * FROM products LIMIT 20 OFFSET 20;
+SELECT * FROM products LIMIT 20 OFFSET 40;
+
+#####################################################################################################################################################
+
+Sub Query
+
+SELECT name, price
+FROM products
+WHERE price > (
+    SELECT MAX(price) FROM products WHERE department = 'Toys'
+);
+
+SELECT p1.name, (SELECT COUNT(name) FROM products)
+FROM (SELECT * FROM products) AS p1
+JOIN (SELECT * FROM products) AS p2 ON p1.id = p2.id
+WHERE p1.id in (SELECT id FROM products);
+
+Subqueries can be used as
+- A source of value
+- A source of rows
+- source of column
+
+SELECT * FROM orders; ==> Many rows & Many columns
+
+SELECT id FROM orders; ==> Many rows & 1 column
+
+SELECT COUNT(*) FROM orders; ==> 1 row & 1 column (single value) ==> scalar Query
+
+SELECT name, price
+FROM products
+WHERE price > (SELECT price FROM products WHERE name = 'some name');
+
+SELECT * FROM
+    (SELECT MAX(price) FROM products) AS max_price,
+    (SELECT MIN(price) FROM products) AS min_price,
+    (SELECT SUM(price) FROM products) AS total_price;
+
+#####################################################################################################################################################
+
+EXISTS
+
+If a subquery returns any rows at all, EXISTS subquery is TRUE, and NOT EXISTS subquery is FALSE.
+
+SELECT column1 FROM t1 WHERE EXISTS (SELECT * FROM t2);
+
+#####################################################################################################################################################
+
+DISTINCT 
+
+Remove duplicate and return the list of unique values
+
+SELECT DISTINCT department FROM products;
+
+SELECT COUNT(DISTINCT department) FROM products;
+
+SELECT DISTINCT department, name FROM products; ==> Unique comination of department and name.
+
+#####################################################################################################################################################
+
+GREATEST
+
+Find the greatest of the given.
+
+SELECT GREATEST (10, 20);
+
+SELECT name, weight, GREATEST(30, 2 * weight)
+FROM products;
+
+#####################################################################################################################################################
+
+LEAST
+
+Find the greatest of the given.
+
+SELECT LEAST (10, 20);
+
+SELECT name, weight, LEAST(30, 2 * weight)
+FROM products;
+
+#####################################################################################################################################################
+
+CASE
+
+SELECT
+    name,
+    price,
+    CASE
+        WHEN price > 600 THEN 'high'
+        WHEN price > 300 THEN 'medium'
+        ELSE 'cheap'
+    END
+FROM products;
+
+#####################################################################################################################################################
+
+DATA TYPES
+
+NUMBERS
+
+Without Decimal ==> smallint, integer, bigint
+
+with decimal ==> {decimal, numeric} ==> More accurate
+                 {real, double precision, float} ==> Less accurate
+
+auto increment ==> smallserial, serial, bigserial
+
+SELECT (2);
+
+SELECT (2.0);
+
+SELECT (2.0::SMALLINT);
+
+CHARACTER
+
+CHAR(5) ==> chracter of length 5 add spaces if less than 5 and trim if it is larger.
+
+VARCHAR ==> No limit for length
+
+VARCHAR(10) ==> keep the character if length less than 10 and trim if it is larger.
+
+TEXT ==> No limit for length
+
+
+BOOLEAN
+
+TRUE ==> true, yes, on, 1, t, y
+
+FALSE ==> false, no, off, 0, f, n
+
+NULL ==> null
+
+DATES
+
+TIME ==> TIME WITH TIME ZONE, TIME WITHOUT TIME ZONE
+
+TIMESTAMP WITH/WITHOUT TIME ZONE
+
+INTERVAL ==> + or - 2 INTERVAL or 2 TIME/TIME STAMP/DATES or 1 TIME and 1 INTERVAL
+
+CURRENCY, BINARY, JSON, GEOMETRIC, RANGE, ARRAYS, XML, UUID
+
+#####################################################################################################################################################
+
+DATA BASE VALIDATION
+
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(40) NOT NULL UNIQUE,
+  department VARCHAR(20) NOT NULL,
+  description TEXT DEFAULT 'No description',
+  price INTEGER NOT NULL CHECK (price > 0),
+  weight INTEGER DEFAULT 9999 
+);
+
+ALTER TABLE products
+ALTER COLUMN price
+SET NOT NULL;
+
+ALTER TABLE will fail when already null values are there(already failing validation is there).
+
+UPDATE products
+SET price = 9999
+WHERE price is NULL;
+
+DEFAULT VALUE
+
+ALTER TABLE products
+ALTER COLUMN weight
+SET DEFAULT 9999;
+
+UNIQUE
+
+unique name
+
+ALTER TABLE products
+ADD UNIQUE (name)
+
+ALTER TABLE products
+DROP CONSTRAINT products_name_key
+
+unique name and department combination
+
+ALTER TABLE products
+ADD UNIQUE (name, department)
+
+ALTER TABLE products
+DROP CONSTRAINT products_name_department_key
+
+COMPARISON VALIDATION
+
+check is only for a column, not for the sub query
+
+ALTER TABLE products
+ADD CHECK (price > 0)
+
+
+CREATE TABLE ordersnew (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    est_delivery TIMESTAMP NOT NULL,
+    CHECK (created_at < est_delivery)
+);
+
+Web Server validation is also added for good validation.
+Lot of libraries avilable for validation at web server level.
+
+#####################################################################################################################################################
+
+UNION
+
+The UNION operator could be used to find the result-set or combination of two or more tables.
+
+Each table used within UNION must have the same number of columns.
+
+The columns must have same data types.
+
+The columns in each table must be in the same order.
+
+SELECT columnnames FROM table1
+UNION
+SELECT columnnames FROM table2;
+
+SELECT columnnames FROM table1
+UNION ALL
+SELECT columnnames FROM table2;
+
+UNION ==> Unique values 
+
+UNION ALL ==> Duplicate values
+
+#####################################################################################################################################################
+
+INTERSECT
+
+INTERSECT statement will return only those rows which will be common to both of the SELECT statements.
+
+The number and type of fields present in the two data-sets must be same and similar
+
+SELECT column1 , column2 ....
+FROM table_names
+WHERE condition
+
+INTERSECT
+
+SELECT column1 , column2 ....
+FROM table_names
+WHERE condition
+
+#####################################################################################################################################################
+
+EXCEPT
+
+This operation includes the tuples which are present one relation but should not be present in other relation.
+
+For example : To find the customers who have an account but no loan at the bank:
+
+SELECT CustomerName FROM Depositor
+
+EXCEPT
+
+SELECT CustomerName FROM Borrower ;
+
+INTERSECT ALL and EXCEPT ALL ==> will include duplicates.
+
+#####################################################################################################################################################
+
+ENUM
+
+An ENUM is a string object whose value is decided from a set of permitted literals(Values)
+that are explicitly defined at the time of column creation.
+
+Succinct data storage required to store data in limited size columns.
+
+The strings that you pass to the enum data types implicitly get the numerical numbering.
+
+CREATE TABLE Student_grade(
+id INT PRIMARY KEY AUTO_INCREMENT,
+Grade VARCHAR(250) NOT NULL,
+priority ENUM('Low', 'Medium', 'High') NOT NULL
+);
+
+The prioritized column will accept only three values.
+
+SELECT * FROM Student_grade
+WHERE priority = 'High';
+
+Here, the order of numbering Low->1, Medium->2, High->3.
+
+SELECT * FROM Student_grade
+WHERE priority = 2;
+
+#####################################################################################################################################################
+
